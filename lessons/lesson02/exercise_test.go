@@ -1,5 +1,5 @@
 // このファイルは「採点表」です。編集しないでください。
-// ただし読むのは推奨です。
+// ただし読むのは推奨です。table-driven test と、状態を検証するテストの書き方のお手本になります。
 package lesson02
 
 import (
@@ -30,7 +30,7 @@ func TestAppendSafe(t *testing.T) {
 		})
 	}
 
-	// ここからが本題。容量に余りがある base を渡して、元の配列が無事かを見ます。
+	// ここからが本題。cap に余りがある base を渡して、元の配列が無事かを確認します。
 	t.Run("元の配列を壊さない", func(t *testing.T) {
 		arr := []int{1, 2, 3, 4, 5}
 		base := arr[:2] // len=2, cap=5 ← 容量が余っているのが罠
@@ -38,12 +38,12 @@ func TestAppendSafe(t *testing.T) {
 		got := AppendSafe(base, 99)
 
 		if !slices.Equal(got, []int{1, 2, 99}) {
-			t.Errorf("AppendSafe(%v, 99) = %v, want [1 2 99]", base, got)
+			t.Errorf("AppendSafe([1 2], 99) = %v, want [1 2 99]", got)
 		}
 		if !slices.Equal(arr, []int{1, 2, 3, 4, 5}) {
 			t.Errorf("AppendSafe が元の配列を書き換えました: arr = %v, want [1 2 3 4 5]\n"+
 				"        base は len=2 cap=5 です。素の append は余った容量にそのまま書き込むので arr[2] が 99 になります。\n"+
-				"        base を壊さないためには、先に新しい配列へコピーする必要があります。", arr)
+				"        壊さないためには、先に新しい配列へコピーする必要があります。", arr)
 		}
 		if len(base) != 2 {
 			t.Errorf("AppendSafe が base の長さを変えました: len(base) = %d, want 2", len(base))
@@ -55,7 +55,7 @@ func TestAppendSafe(t *testing.T) {
 		base[0], base[1] = 1, 2
 
 		got := AppendSafe(base, 3)
-		got[0] = 777 // 戻り値をいじる
+		got[0] = 777 // 戻り値の方だけをいじる
 
 		if base[0] != 1 {
 			t.Errorf("戻り値を書き換えたら base まで変わりました: base[0] = %d, want 1\n"+
@@ -83,7 +83,7 @@ func TestRemoveAt(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			input := slices.Clone(tt.s) // 失敗メッセージ用に元の値を控えておく
+			input := slices.Clone(tt.s) // 失敗メッセージ用に、渡す前の値を控えておく
 			got := RemoveAt(tt.s, tt.i)
 			if !slices.Equal(got, tt.want) {
 				t.Errorf("RemoveAt(%v, %d) = %v, want %v", input, tt.i, got, tt.want)
@@ -109,6 +109,7 @@ func TestChunk(t *testing.T) {
 		{name: "size が負", s: []int{1, 2, 3}, size: -1, want: nil},
 	}
 
+	// [][]int の比較。要素ごとに slices.Equal で比べます。
 	equal := func(a, b [][]int) bool {
 		return slices.EqualFunc(a, b, func(x, y []int) bool { return slices.Equal(x, y) })
 	}
@@ -122,25 +123,24 @@ func TestChunk(t *testing.T) {
 		})
 	}
 
-	t.Run("チャンクの容量が切り詰められている", func(t *testing.T) {
+	t.Run("チャンクの cap が切り詰められている", func(t *testing.T) {
 		s := []int{1, 2, 3, 4, 5, 6}
 		got := Chunk(s, 2)
 		if len(got) != 3 {
-			t.Fatalf("Chunk(%v, 2) の要素数 = %d, want 3", s, len(got))
+			t.Fatalf("Chunk(%v, 2) のチャンク数 = %d, want 3", s, len(got))
 		}
 
 		for i, c := range got {
 			if cap(c) != len(c) {
-				t.Errorf("Chunk(%v, 2) の %d 番目のチャンク: len = %d, cap = %d (len と同じであるべき)\n"+
-					"        s[low:high] だと cap が元スライスの末尾まで伸びてしまいます。\n"+
-					"        3 インデックスのスライス式 s[low:high:high] で cap を切り詰めてください。",
-					s, i, len(c), cap(c))
+				t.Errorf("%d 番目のチャンク: len = %d, cap = %d (cap は len と同じであるべき)\n"+
+					"        s[low:high] だと cap が元スライスの末尾まで伸びます。\n"+
+					"        3インデックスのスライス式 s[low:high:high] で切り詰めてください。", i, len(c), cap(c))
 			}
 		}
 
-		// 容量が伸びていると、先頭チャンクへの append が次のチャンクを踏み潰します。
+		// cap が伸びたままだと、先頭チャンクへの append が隣のチャンクを踏み潰します。
 		_ = append(got[0], 99)
-		if got[1][0] != 3 {
+		if !slices.Equal(got[1], []int{3, 4}) {
 			t.Errorf("先頭チャンクに append したら隣のチャンクが壊れました: got[1] = %v, want [3 4]", got[1])
 		}
 	})
@@ -156,7 +156,7 @@ func TestDedupe(t *testing.T) {
 		{name: "全部同じ", s: []string{"a", "a", "a"}, want: []string{"a"}},
 		{name: "重複なし", s: []string{"a", "b", "c"}, want: []string{"a", "b", "c"}},
 		{name: "大文字小文字を区別", s: []string{"Go", "go", "Go"}, want: []string{"Go", "go"}},
-		{name: "空文字列も要素", s: []string{"", "a", ""}, want: []string{"", "a"}},
+		{name: "空文字列も要素として扱う", s: []string{"", "a", ""}, want: []string{"", "a"}},
 		{name: "空スライス", s: []string{}, want: []string{}},
 		{name: "nil スライス", s: nil, want: nil},
 	}
@@ -169,6 +169,15 @@ func TestDedupe(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("入力を書き換えない", func(t *testing.T) {
+		s := []string{"a", "b", "a"}
+		want := slices.Clone(s)
+		_ = Dedupe(s)
+		if !slices.Equal(s, want) {
+			t.Errorf("Dedupe が引数を書き換えました: s = %q, want %q", s, want)
+		}
+	})
 }
 
 func TestGroupByLength(t *testing.T) {
@@ -180,14 +189,14 @@ func TestGroupByLength(t *testing.T) {
 		{
 			name:  "通常",
 			words: []string{"go", "rust", "c", "java", "x"},
-			want:  map[int][]string{2: {"go"}, 4: {"rust", "java"}, 1: {"c", "x"}},
+			want:  map[int][]string{1: {"c", "x"}, 2: {"go"}, 4: {"rust", "java"}},
 		},
 		{
-			name:  "日本語は rune 単位",
+			name:  "日本語は rune 単位で数える",
 			words: []string{"あい", "go", "こんにちは"},
 			want:  map[int][]string{2: {"あい", "go"}, 5: {"こんにちは"}},
 		},
-		{name: "空文字列", words: []string{""}, want: map[int][]string{0: {""}}},
+		{name: "空文字列は長さ0", words: []string{""}, want: map[int][]string{0: {""}}},
 		{name: "空スライス", words: []string{}, want: map[int][]string{}},
 		{name: "nil スライス", words: nil, want: map[int][]string{}},
 	}
@@ -227,13 +236,13 @@ func TestSortedKeys(t *testing.T) {
 		})
 	}
 
-	// map の反復順序はランダムなので、ソートを忘れるとここで落ちます。
-	t.Run("何度呼んでも同じ順序", func(t *testing.T) {
+	// map の反復順序はランダムなので、ソートを忘れているとここで落ちます。
+	t.Run("何度呼んでも同じ順序になる", func(t *testing.T) {
 		m := map[string]int{"e": 1, "d": 2, "c": 3, "b": 4, "a": 5, "f": 6, "g": 7, "h": 8}
 		want := SortedKeys(m)
 		for i := 0; i < 100; i++ {
 			if got := SortedKeys(m); !slices.Equal(got, want) {
-				t.Fatalf("SortedKeys を繰り返し呼んだら結果が変わりました (%d 回目): got = %q, 初回 = %q\n"+
+				t.Fatalf("繰り返し呼んだら結果が変わりました (%d 回目): got = %q, 初回 = %q\n"+
 					"        Go の map は反復順序が毎回ランダムです。キーを集めたあとソートしてください。", i+2, got, want)
 			}
 		}
