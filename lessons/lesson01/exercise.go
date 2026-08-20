@@ -2,7 +2,11 @@
 // 各関数の panic("TODO") を自分の実装に置き換えてください。
 package lesson01
 
-import "errors"
+import (
+	"errors"
+	"strconv"
+	"strings"
+)
 
 // ErrDivideByZero は Divide でゼロ除算が起きたときに返すエラーです。
 // 実装済みなので、そのまま使ってください。
@@ -16,7 +20,16 @@ var ErrInvalidScore = errors.New("invalid score")
 //
 // ポイント: Go の関数は複数の値を返せます。ここでは「名前付き戻り値」を使っています。
 func SumAndAvg(nums []int) (sum int, avg float64) {
-	panic("TODO: SumAndAvg を実装してください")
+	// panic("TODO: SumAndAvg を実装してください")
+	if len(nums) == 0 {
+		return 0, 0
+	}
+	for _, num := range nums {
+		sum += num
+	}
+	avg = float64(sum) / float64(len(nums))
+
+	return
 }
 
 // 課題2: Divide は a を b で割った結果を返します。
@@ -24,7 +37,11 @@ func SumAndAvg(nums []int) (sum int, avg float64) {
 //
 // ポイント: Go には例外がありません。失敗しうる処理は error を「値として」返します。
 func Divide(a, b float64) (float64, error) {
-	panic("TODO: Divide を実装してください")
+	// panic("TODO: Divide を実装してください")
+	if b == 0 {
+		return 0, ErrDivideByZero
+	}
+	return a / b, nil
 }
 
 // 課題3: Grade は点数を評価に変換します。
@@ -40,7 +57,21 @@ func Divide(a, b float64) (float64, error) {
 // ポイント: Go の switch は条件式を省略して `switch { case 条件: }` と書けます。
 // また break は不要です（自動で抜けます）。
 func Grade(score int) (string, error) {
-	panic("TODO: Grade を実装してください")
+	// panic("TODO: Grade を実装してください")
+	switch {
+	case score < 0 || score > 100:
+		return "", ErrInvalidScore
+	case score >= 90:
+		return "A", nil
+	case score >= 80:
+		return "B", nil
+	case score >= 70:
+		return "C", nil
+	case score >= 60:
+		return "D", nil
+	default:
+		return "F", nil
+	}
 }
 
 // 課題4: WordCount は空白区切りの単語の出現回数を数えます。
@@ -51,7 +82,16 @@ func Grade(score int) (string, error) {
 // map から存在しないキーを読むと「ゼロ値」(int なら 0) が返るので、
 // 事前の存在チェックなしに m[w]++ と書けます。
 func WordCount(s string) map[string]int {
-	panic("TODO: WordCount を実装してください")
+	// panic("TODO: WordCount を実装してください")
+	var m = make(map[string]int)
+	if s == "" {
+		return m
+	}
+	array := strings.Fields(s)
+	for _, a := range array {
+		m[a]++
+	}
+	return m
 }
 
 // 課題5: FizzBuzz は 1 から n までの FizzBuzz 結果をスライスで返します。
@@ -67,7 +107,26 @@ func WordCount(s string) map[string]int {
 // (string(i) は文字コード変換になってしまうので間違いです)
 // スライスは make([]string, 0, n) で容量を先に確保しておくと効率的です。
 func FizzBuzz(n int) []string {
-	panic("TODO: FizzBuzz を実装してください")
+	// panic("TODO: FizzBuzz を実装してください")
+	var slise []string
+	if n <= 0 {
+		return slise
+	}
+	slise = make([]string, 0, n)
+
+	for i := 1; i < n+1; i++ {
+		switch {
+		case i%15 == 0:
+			slise = append(slise, "FizzBuzz")
+		case i%3 == 0:
+			slise = append(slise, "Fizz")
+		case i%5 == 0:
+			slise = append(slise, "Buzz")
+		default:
+			slise = append(slise, strconv.Itoa(i))
+		}
+	}
+	return slise
 }
 
 // 課題6: Reverse は文字列を逆順にします。
@@ -77,5 +136,10 @@ func FizzBuzz(n int) []string {
 // s[i] で取り出すと byte (1バイト) なので、日本語が壊れます。
 // []rune(s) に変換すると「文字」単位で扱えます。
 func Reverse(s string) string {
-	panic("TODO: Reverse を実装してください")
+	// panic("TODO: Reverse を実装してください")
+	r := []rune(s)
+	for i, j := 0, len(r)-1; i < j; i, j = i+1, j-1 {
+		r[i], r[j] = r[j], r[i]
+	}
+	return string(r)
 }
