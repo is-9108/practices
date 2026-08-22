@@ -2,6 +2,8 @@
 // 各関数の panic("TODO") を自分の実装に置き換えてください。
 package lesson02
 
+import "slices"
+
 // 課題1: AppendSafe は base に v を足した「新しいスライス」を返します。
 // base 自身と、base が参照している配列を一切書き換えてはいけません。
 //
@@ -10,7 +12,9 @@ package lesson02
 // その配列を共有している別のスライスまで巻き添えで壊れます。
 // 先に新しい配列へコピーしてから append してください。
 func AppendSafe(base []int, v int) []int {
-	panic("TODO: AppendSafe を実装してください")
+	// panic("TODO: AppendSafe を実装してください")
+	res := slices.Clone(base)
+	return append(res, v)
 }
 
 // 課題2: RemoveAt は s から i 番目の要素を取り除いたスライスを返します。
@@ -21,7 +25,12 @@ func AppendSafe(base []int, v int) []int {
 // ポイント: append(s[:i], s[i+1:]...) が定番です。
 // slice... は「可変長引数にスライスを展開して渡す」記法です。
 func RemoveAt(s []int, i int) []int {
-	panic("TODO: RemoveAt を実装してください")
+	// panic("TODO: RemoveAt を実装してください")
+	if i < 0 || i >= len(s) {
+		return s
+	}
+	result := append(s[:i], s[i+1:]...)
+	return result
 }
 
 // 課題3: Chunk は s を size 個ずつのまとまりに分割します。
@@ -33,7 +42,16 @@ func RemoveAt(s []int, i int) []int {
 // cap が len と等しくなるように切り詰めてください。
 // これをしないと、あるチャンクに append したときに次のチャンクの中身が壊れます。
 func Chunk(s []int, size int) [][]int {
-	panic("TODO: Chunk を実装してください")
+	// panic("TODO: Chunk を実装してください")
+	if size <= 0 {
+		return nil
+	}
+	var result [][]int
+	for low := 0; low < len(s); low += size {
+		high := min(low+size, len(s))
+		result = append(result, s[low:high:high])
+	}
+	return result
 }
 
 // 課題4: Dedupe は重複を取り除きます。並び順は「最初に現れた順」を保ってください。
@@ -43,7 +61,15 @@ func Chunk(s []int, size int) [][]int {
 // struct{} はサイズ 0 の型で、「値に意味がない集合」を表す慣習です。
 // 存在チェックは _, ok := m[k] の ok を使います。
 func Dedupe(s []string) []string {
-	panic("TODO: Dedupe を実装してください")
+	// panic("TODO: Dedupe を実装してください")
+	var res []string
+	for _, r := range s {
+		if slices.Contains(res, r) {
+			continue
+		}
+		res = append(res, r)
+	}
+	return res
 }
 
 // 課題5: GroupByLength は単語を「文字数」でグループ分けします。
