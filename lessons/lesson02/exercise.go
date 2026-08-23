@@ -2,7 +2,10 @@
 // 各関数の panic("TODO") を自分の実装に置き換えてください。
 package lesson02
 
-import "slices"
+import (
+	"maps"
+	"slices"
+)
 
 // 課題1: AppendSafe は base に v を足した「新しいスライス」を返します。
 // base 自身と、base が参照している配列を一切書き換えてはいけません。
@@ -83,7 +86,13 @@ func Dedupe(s []string) []string {
 // nil スライスには append できます。つまり存在チェックなしで
 // m[k] = append(m[k], v) と書けます。
 func GroupByLength(words []string) map[int][]string {
-	panic("TODO: GroupByLength を実装してください")
+	// panic("TODO: GroupByLength を実装してください")
+	res := map[int][]string{}
+	for _, word := range words {
+		n := len([]rune(word))
+		res[n] = append(res[n], word)
+	}
+	return res
 }
 
 // 課題6: SortedKeys は m のキーを昇順に並べて返します。
@@ -93,7 +102,14 @@ func GroupByLength(words []string) map[int][]string {
 // 出力を安定させたいなら必ずソートします。
 // slices.Sort、または slices.Sorted(maps.Keys(m)) が使えます。
 func SortedKeys(m map[string]int) []string {
-	panic("TODO: SortedKeys を実装してください")
+	// panic("TODO: SortedKeys を実装してください")
+	res := []string{}
+	if m == nil {
+		return res
+	}
+	keys := maps.Keys(m)
+	res = slices.Sorted(keys)
+	return res
 }
 
 // 課題7: MergeCounts は src の集計を dst に足し込みます。戻り値はありません。
@@ -105,5 +121,11 @@ func SortedKeys(m map[string]int) []string {
 // 呼び出し側にも見えます（append で戻り値を受け直すスライスとは挙動が違います）。
 // ただし nil map への書き込みは panic するので、ガードが必要です。
 func MergeCounts(dst, src map[string]int) {
-	panic("TODO: MergeCounts を実装してください")
+	// panic("TODO: MergeCounts を実装してください")
+	if dst == nil || src == nil {
+		return
+	}
+	for k, v := range src {
+		dst[k] += v
+	}
 }
