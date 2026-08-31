@@ -4,6 +4,9 @@ package lesson03
 
 import (
 	"errors"
+	"fmt"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -22,23 +25,23 @@ type Counter struct {
 // ⚠ このメソッドは「レシーバがわざと間違っています」。
 // 値レシーバはコピーを受け取るだけなので、呼び出し側の Counter は変わりません。
 // レシーバごと修正してください。
-func (c Counter) Inc() {
-	panic("TODO: Inc を実装してください（レシーバも見直すこと）")
+func (c *Counter) Inc() {
+	c.n++
 }
 
 // Add はカウンタに delta を足します。delta は負でも構いません。
 func (c *Counter) Add(delta int) {
-	panic("TODO: Add を実装してください")
+	c.n += delta
 }
 
 // Value は現在の値を返します。
 func (c *Counter) Value() int {
-	panic("TODO: Value を実装してください")
+	return c.n
 }
 
 // Reset はカウンタを 0 に戻します。
 func (c *Counter) Reset() {
-	panic("TODO: Reset を実装してください")
+	c.n = 0
 }
 
 // ============================================================
@@ -74,14 +77,31 @@ type User struct {
 // ポイント: 検証をコンストラクタに集約すると、
 // 「User が存在するなら必ず妥当」と以降のコードが信じられるようになります。
 func NewUser(id int, name, email string) (*User, error) {
-	panic("TODO: NewUser を実装してください")
+	name = strings.TrimSpace(name)
+	if id <= 0 {
+		return nil, ErrInvalidID
+	}
+	if name == " " || name == "" {
+		return nil, ErrEmptyName
+	}
+	if !strings.Contains(email, "@") || email[len(email)-1:] == "@" || email[0:1] == "@" {
+		return nil, ErrInvalidEmail
+	}
+
+	return &User{id, name, email}, nil
 }
 
 // Rename は名前を変更します。
 // 検証ルールは NewUser と同じ（空・空白のみは ErrEmptyName、保存時に TrimSpace）。
 // エラーのときは u を一切変更しないでください。
 func (u *User) Rename(name string) error {
-	panic("TODO: Rename を実装してください")
+	name = strings.TrimSpace(name)
+
+	if name == "" {
+		return ErrEmptyName
+	}
+	u.Name = name
+	return nil
 }
 
 // ============================================================
@@ -96,24 +116,33 @@ type Stack struct {
 
 // Push は値を積みます。
 func (s *Stack) Push(v int) {
-	panic("TODO: Push を実装してください")
+	s.items = append(s.items, v)
 }
 
 // Pop は一番上の値を取り出して取り除きます。
 // 空のときは (0, false) を返してください。
 func (s *Stack) Pop() (int, bool) {
-	panic("TODO: Pop を実装してください")
+	if len(s.items) == 0 {
+		return 0, false
+	}
+	var res = s.items[len(s.items)-1]
+	// s.items = append(s.items[:0], s.items[1:]...)
+	s.items = s.items[:len(s.items)-1]
+	return res, true
 }
 
 // Peek は一番上の値を取り除かずに返します。
 // 空のときは (0, false) を返してください。
 func (s *Stack) Peek() (int, bool) {
-	panic("TODO: Peek を実装してください")
+	if len(s.items) == 0 {
+		return 0, false
+	}
+	return s.items[len(s.items)-1], true
 }
 
 // Len は積まれている個数を返します。
 func (s *Stack) Len() int {
-	panic("TODO: Len を実装してください")
+	return len(s.items)
 }
 
 // ============================================================
@@ -139,24 +168,31 @@ type Money struct {
 //
 // ポイント: 小さな不変の値型なので、ポインタではなく「値」で返します。
 func NewMoney(amount int64, currency string) (Money, error) {
-	panic("TODO: NewMoney を実装してください")
+	if len(currency) == 0 {
+		return Money{}, ErrInvalidCurrency
+	}
+	var res = Money{amount, currency}
+	return res, nil
 }
 
 // Amount は金額を返します。
 func (m Money) Amount() int64 {
-	panic("TODO: Amount を実装してください")
+	return m.amount
 }
 
 // Currency は通貨コードを返します。
 func (m Money) Currency() string {
-	panic("TODO: Currency を実装してください")
+	return m.currency
 }
 
 // Add は m と other を足した「新しい Money」を返します。
 // m 自身は変更しません（値レシーバなので、そもそも変更できません）。
 // 通貨が異なるときは Money{}, ErrCurrencyMismatch を返してください。
 func (m Money) Add(other Money) (Money, error) {
-	panic("TODO: Add を実装してください")
+	if m.currency != other.currency {
+		return Money{}, ErrCurrencyMismatch
+	}
+	return Money{m.amount + other.amount, m.currency}, nil
 }
 
 // String は "1050 JPY" の形式で返します（金額、半角スペース、通貨コード）。
@@ -165,7 +201,8 @@ func (m Money) Add(other Money) (Money, error) {
 // fmt.Println(m) や %v での出力が自動的にこの形になります。
 // 中で fmt.Sprintf("%v", m) と書くと無限再帰するので注意してください。
 func (m Money) String() string {
-	panic("TODO: String を実装してください")
+	var amountString = strconv.Itoa(int(m.amount))
+	return fmt.Sprintf("%s %s", amountString, m.currency)
 }
 
 // ============================================================
